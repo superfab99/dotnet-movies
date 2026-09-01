@@ -166,3 +166,4 @@
 /Users/suyog/Documents/DotnetCore/Movies/Movies.Api/bin/Debug/net10.0/Serilog.Sinks.Debug.dll
 /Users/suyog/Documents/DotnetCore/Movies/Movies.Api/bin/Debug/net10.0/Serilog.Sinks.File.dll
 /Users/suyog/Documents/DotnetCore/Movies/Movies.Api/bin/Debug/net10.0/Serilog.Sinks.MSSqlServer.dll
+/Users/suyog/Documents/DotnetCore/Movies/Movies.Api/obj/Debug/net10.0/Movies.Api.sourcelink.json

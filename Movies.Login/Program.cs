@@ -92,12 +92,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapMoviesLoginHealthChecks();
-
 app.MapControllers();
 
 app.Run();

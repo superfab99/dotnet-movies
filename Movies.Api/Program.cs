@@ -7,6 +7,7 @@ using Movies.Api.Data;
 using Movies.Api.Exceptions;
 using Movies.Api.HealthChecks;
 using Movies.Api.Mappings;
+using Movies.Api.Middleware;
 using Movies.Api.Repositories;
 using Movies.Api.Services;
 using Movies.Api.Utils;
@@ -99,6 +100,7 @@ try
     }
 
     app.UseHttpsRedirection();
+    app.UseRequestLogging();
     app.UseAuthentication();
     app.UseAuthorization();
 
