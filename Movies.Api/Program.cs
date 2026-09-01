@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -81,12 +82,27 @@ try
     builder.Services.AddScoped<IMoviesService, MoviesService>();
     builder.Services.AddScoped<IReviewsService, ReviewsService>();
     builder.Services.AddScoped<IReviewsRepository, ReviewsRepository>();
-
     builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
 
     //other mapping will be discovered if its in same folder
     builder.Services.AddAutoMapper(_ => { }, typeof(MovieMapping).Assembly);
+    builder.Services.AddRateLimiter(options =>
+    {
+        options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+        options.AddPolicy("movieslimit", context =>
+        {
+            var key = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+            return RateLimitPartition.GetFixedWindowLimiter(key, _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            });
+        });
+    });
 
     var app = builder.Build();
 
@@ -103,6 +119,7 @@ try
     app.UseRequestLogging();
     app.UseAuthentication();
     app.UseAuthorization();
+    app.UseRateLimiter();
 
     app.MapMoviesApiHealthChecks();
 

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Movies.Api.DTOs;
 using Movies.Api.Services;
 
@@ -28,6 +29,7 @@ namespace Movies.Api.Controller
         }
 
         [HttpGet()]
+        [EnableRateLimiting("movieslimit")]
         public async Task<IActionResult> GetAllMovies([FromQuery] MovieQueryDto query)
         {
             _logger.LogInformation("GetAllMovies api was called");

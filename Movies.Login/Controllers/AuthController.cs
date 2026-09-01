@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Movies.Login.DTOs;
 using Movies.Login.Services;
 
 namespace Movies.Login.Controllers
 {
     [ApiController]
+    [EnableRateLimiting("loginlimit")]
     [Route("api/[controller]")]
     public class AuthController : ControllerBase
     {
