@@ -79,11 +79,40 @@
   - Security requirement on all endpoints
   - Fully documented API operations
 
+#### 6. **Request/Response Logging Middleware** ✅ **← NEW**
+
+- **Status:** Implemented and Verified
+- **Purpose:** Trace each HTTP request across logs with a unique request ID
+- **Behavior:**
+  - Generates a request ID per incoming request
+  - Logs start, completion, and failure events
+  - Captures method, path, status code, and execution duration
+  - Works with existing Serilog pipeline and SQL sink
+- **Location:**
+  - `Movies.Api/Middleware/RequestLoggingMiddleware.cs`
+  - `Movies.Login/Middleware/RequestLoggingMiddleware.cs`
+- **Verified Outcome:** Logs are being written to the SQL `Logs` table during runtime
+
+#### 7. **Rate Limiting & 429 Custom Response** ✅ **← NEW**
+
+- **Status:** Implemented and Verified
+- **Purpose:** Protect login and public endpoints from abuse and rapid request bursts
+- **Behavior:**
+  - Fixed-window limiter by client IP
+  - Blocks excess requests after a configured threshold
+  - Returns `429 Too Many Requests`
+  - Returns structured JSON with retry guidance and `Retry-After` header
+- **Location:**
+  - `Movies.Login/Program.cs`
+  - `Movies.Login/DTOs/RateLimitResponseDto.cs`
+  - `Movies.Login/Middleware/RateLimitResponseMiddleware.cs`
+- **Verified Outcome:** Repeated requests are rejected with a rate-limit response instead of processing normally
+
 ---
 
 ### **Movies.Api Only**
 
-#### 6. **Generic Repository Pattern** ✅
+#### 8. **Generic Repository Pattern** ✅
 
 - **Status:** Fully Implemented
 - **Components:**
@@ -95,7 +124,7 @@
   - Pagination with filtering and sorting
   - Automatic audit timestamp tracking
 
-#### 7. **Movie-Review One-to-Many Relationship** ✅
+#### 9. **Movie-Review One-to-Many Relationship** ✅
 
 - **Status:** Implemented
 - **Schema:**
@@ -107,7 +136,7 @@
   - GET `/api/reviews/movie/{movieId}` - Get all reviews for a movie
   - DELETE `/api/reviews/{id}` - Delete review
 
-#### 8. **Movie CRUD Operations** ✅
+#### 10. **Movie CRUD Operations** ✅
 
 - **Status:** Fully Implemented
 - **Endpoints:**
@@ -117,7 +146,7 @@
   - PUT `/api/movies/{id}` - Update
   - DELETE `/api/movies/{id}` - Delete (204 No Content)
 
-#### 9. **Pagination, Filtering & Sorting** ✅
+#### 11. **Pagination, Filtering & Sorting** ✅
 
 - **Status:** Implemented
 - **Pagination:** PageNumber, PageSize (1-100), TotalPages calculation
@@ -125,7 +154,7 @@
 - **Sorting:** By title, genre, rating, releaseDate, durationMinutes + Descending flag
 - **Stable Sorting:** ThenBy(Id) for deterministic pagination
 
-#### 10. **Global Exception Handler** ✅
+#### 12. **Global Exception Handler** ✅
 
 - **Status:** Implemented
 - **Mapping:**
@@ -135,7 +164,7 @@
   - All others → 500 with logged exception
 - **Response Format:** Standardized ProblemDetails JSON
 
-#### 11. **Data Validation** ✅
+#### 13. **Data Validation** ✅
 
 - **Status:** Implemented (Multi-layer)
 - **Model Level:** [Required], [StringLength], [Range], [EmailAddress]
@@ -146,7 +175,7 @@
 
 ### **Movies.Login Only**
 
-#### 12. **User Registration** ✅
+#### 14. **User Registration** ✅
 
 - **Status:** Implemented
 - **Endpoint:** POST `/api/auth/register`
@@ -157,7 +186,7 @@
   - Returns user info on success
 - **DTO:** `UserRegisterDto`
 
-#### 13. **User Login** ✅
+#### 15. **User Login** ✅
 
 - **Status:** Implemented
 - **Endpoint:** POST `/api/auth/login`
@@ -169,7 +198,7 @@
 - **DTO:** `UserLoginDto`
 - **Response:** `LoginResultDto` (Token, RefreshToken, Message)
 
-#### 14. **Refresh Token Mechanism** ✅ **← NEW**
+#### 16. **Refresh Token Mechanism** ✅
 
 - **Status:** Implemented
 - **Endpoint:** POST `/api/auth/refresh`
@@ -192,7 +221,7 @@
   - Generate new access & refresh token pair
   - Return new tokens
 
-#### 15. **Role-Based Authorization** ✅
+#### 17. **Role-Based Authorization** ✅
 
 - **Status:** Implemented
 - **Models:**
@@ -202,7 +231,7 @@
 - **Token Claims:** Role claims auto-included in JWT
 - **Policies:** `MovieWrite` policy checks permission claim
 
-#### 16. **Entity Type Configurations** ✅ **← NEW**
+#### 18. **Entity Type Configurations** ✅
 
 - **Status:** Implemented
 - **File:** `ModelConfigurations/RefreshTokenConfiguration.cs`
@@ -316,6 +345,8 @@ UserId (FK) | RoleId (FK) | Composite PK
 
 - [x] Authentication & Authorization
 - [x] Logging (Serilog + DB persistence)
+- [x] Request/Response Middleware Tracing
+- [x] Rate Limiting with Custom 429 Responses
 - [x] Health Checks
 - [x] Exception Handling (Centralized)
 - [x] Data Validation (Multi-layer)
@@ -325,15 +356,16 @@ UserId (FK) | RoleId (FK) | Composite PK
 - [x] Database Migrations
 - [x] Pagination & Filtering
 
-### ⏳ Still Needed for Production
+### ✅ Completed for Production Hardening
 
-1. **Request/Response Logging Middleware** ⏳
-   - Log all HTTP requests/responses
-   - Include headers, body, execution time
-2. **Rate Limiting** ⏳
-   - Prevent API abuse
-   - Per-user, per-IP throttling
-   - Implement with AspNetCore.RateLimit
+1. **Request/Response Logging Middleware** ✅
+   - Logs all HTTP requests and responses with request IDs
+   - Captures method, path, status code, and duration
+   - Stores entries in the SQL `Logs` table through Serilog
+2. **Rate Limiting** ✅
+   - Prevents API abuse and request bursts
+   - Uses per-client/IP throttling
+   - Returns custom JSON `429 Too Many Requests` responses with `Retry-After`
 
 3. **Caching Strategy** ⏳
    - Cache frequently accessed data
@@ -392,17 +424,17 @@ The project is now in a stable implementation phase. The next work should focus 
 
 ### Phase 1: Essential Hardening (Current Sprint)
 
-1. **Request/Response Logging Middleware**
-   - Add middleware to capture request IDs, execution time, status codes, and response sizes
-   - Log auth failures and slow endpoints for troubleshooting
-   - Goal: improve observability and debugging from production traffic
+1. **Request/Response Logging Middleware** ✅
+   - Captures request IDs, execution time, status codes, and endpoint metadata
+   - Logs auth failures and slow requests for troubleshooting
+   - Goal: improved observability and debugging from production traffic
 
-2. **Rate Limiting & Abuse Prevention**
-   - Add throttling for login and public endpoints
-   - Protect against brute-force attempts and traffic spikes
-   - Goal: reduce abuse and support stable service performance under load
+2. **Rate Limiting & Abuse Prevention** ✅
+   - Added throttling for auth and public endpoints
+   - Protects against brute-force attempts and traffic spikes
+   - Goal: stable service behavior under load
 
-3. **Input Sanitization & Security Validation**
+3. **Input Sanitization & Security Validation** ⏳
    - Add strict validation for all DTOs and controller inputs
    - Review edge cases for null, empty, overlong, and malicious payloads
    - Goal: reduce injection risk and improve reliability
@@ -475,10 +507,11 @@ This document will be updated after each meaningful milestone, not only after ma
 
 ### Current Working Focus
 
-- Request/Response Logging Middleware
-- Rate Limiting for authentication endpoints
-- Caching for read-heavy movie endpoints
-- Query-performance review for filter/sort/pagination paths
+- Request/Response Logging Middleware ✅
+- Rate Limiting for authentication endpoints ✅
+- Custom 429 response handling ✅
+- Caching for read-heavy movie endpoints ⏳
+- Query-performance review for filter/sort/pagination paths ⏳
 
 ### Performance Review Questions
 

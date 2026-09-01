@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Movies.Login.Data;
+using Movies.Login.DTOs;
 using Movies.Login.HealthChecks;
 using Movies.Login.Mappings;
 using Movies.Login.Models;
@@ -83,17 +84,33 @@ builder.Services.AddAutoMapper(_ => { }, typeof(UserMapping).Assembly);
 builder.Services.AddRateLimiter(options =>
     {
         options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+        options.OnRejected = async (context, token) =>
+     {
+         context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+         context.HttpContext.Response.Headers["Retry-After"] = "60";
+         context.HttpContext.Response.ContentType = "application/json";
+
+         await context.HttpContext.Response.WriteAsJsonAsync(new RateLimitResponseDto
+         {
+             Error = "TooManyRequests",
+             Message = "Too many requests. Please wait 60 seconds before trying again.",
+             RetryAfterSeconds = 60
+         });
+     };
+
         options.AddPolicy("loginlimit", context =>
         {
             var key = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
-            return RateLimitPartition.GetFixedWindowLimiter(key, _ => new FixedWindowRateLimiterOptions
-            {
-                PermitLimit = 10,
-                Window = TimeSpan.FromMinutes(1),
-                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                QueueLimit = 0
-            });
+            return RateLimitPartition.GetFixedWindowLimiter(
+                key,
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 5,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                    QueueLimit = 0
+                });
         });
     });
 
