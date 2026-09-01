@@ -31,6 +31,7 @@ try
     builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
     builder.Services.AddOpenApi();
     builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddMemoryCache();
 
     builder.Services.AddAuthorization();
 
@@ -115,6 +116,11 @@ try
         app.UseSwaggerUI();
     }
 
+    if (!app.Environment.IsDevelopment())
+    {
+        app.UseHsts();
+    }
+
     app.UseHttpsRedirection();
     app.UseRequestLogging();
     app.UseAuthentication();
@@ -122,6 +128,16 @@ try
     app.UseRateLimiter();
 
     app.MapMoviesApiHealthChecks();
+
+    app.Use(async (context, next) =>
+    {
+        context.Response.Headers["X-Frame-Options"] = "DENY";
+        context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+        context.Response.Headers["Referrer-Policy"] = "no-referrer";
+        context.Response.Headers["X-XSS-Protection"] = "1; mode=block";
+
+        await next();
+    });
 
     app.MapControllers();
 
