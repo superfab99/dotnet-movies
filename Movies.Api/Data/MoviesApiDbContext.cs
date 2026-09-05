@@ -12,5 +12,13 @@ namespace Movies.Api.Data
 
         public DbSet<Movie> Movies { get; set; }
         public DbSet<Review> Reviews { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.ApplyConfigurationsFromAssembly(
+                typeof(MoviesApiDbContext).Assembly);
+        }
     }
 }

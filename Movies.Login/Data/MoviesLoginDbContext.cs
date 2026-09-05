@@ -16,6 +16,8 @@ namespace Movies.Login.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            base.OnModelCreating(modelBuilder);
+
             modelBuilder.Entity<UserRoles>()
                 .HasKey(ur => new { ur.UserId, ur.RoleId });
 

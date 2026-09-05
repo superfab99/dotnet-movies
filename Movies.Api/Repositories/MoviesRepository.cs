@@ -60,7 +60,16 @@ namespace Movies.Api.Repositories
                     Genre = movie.Genre,
                     Rating = movie.Rating,
                     CreatedAt = movie.CreatedAt,
-                    ModifiedAt = movie.ModifiedAt
+                    ModifiedAt = movie.ModifiedAt,
+                    MoviePoster = movie.MoviePoster == null
+                        ? null
+                        : new MoviePosterDto
+                        {
+                            Id = movie.MoviePoster.Id,
+                            AltText = movie.MoviePoster.AltText,
+                            ImageUrl = movie.MoviePoster.ImageUrl,
+                            MovieId = movie.MoviePoster.MovieId,
+                        }
                 })
                 .ToListAsync();
 

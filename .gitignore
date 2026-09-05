@@ -5,6 +5,9 @@
 # Logs
 Logs/
 
+# Uploaded movie poster files
+Movies.Api/uploads/
+
 # Generated files
 project.lock.json
 .vs/

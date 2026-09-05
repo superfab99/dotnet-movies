@@ -11,6 +11,6 @@ namespace Movies.Api.DTOs
         public double Rating { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime ModifiedAt { get; set; }
-
+        public MoviePosterDto? MoviePoster { get; set; }
     }
 }

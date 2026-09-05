@@ -19,6 +19,7 @@ namespace Movies.Api.Models
         [Range(1, 1000)]
         public int DurationMinutes { get; set; }
         public ICollection<Review> Reviews { get; set; } = new List<Review>();
+        public MoviePoster? MoviePoster { get; set; }
 
     }
 }

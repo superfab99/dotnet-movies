@@ -84,6 +84,8 @@ try
     builder.Services.AddScoped<IReviewsService, ReviewsService>();
     builder.Services.AddScoped<IReviewsRepository, ReviewsRepository>();
     builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+    builder.Services.AddScoped<IMoviePosterRepository, MoviePosterRepository>();
+    builder.Services.AddScoped<IMoviePosterService, MoviePosterService>();
 
 
     //other mapping will be discovered if its in same folder
@@ -126,6 +128,7 @@ try
     app.UseAuthentication();
     app.UseAuthorization();
     app.UseRateLimiter();
+    app.UseStaticFiles();
 
     app.MapMoviesApiHealthChecks();
 
