@@ -12,5 +12,6 @@ namespace Movies.Api.DTOs
         public DateTime CreatedAt { get; set; }
         public DateTime ModifiedAt { get; set; }
         public MoviePosterDto? MoviePoster { get; set; }
+        public List<MovieActorDto> MovieActors { get; set; } = new();
     }
 }

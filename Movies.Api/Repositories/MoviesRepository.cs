@@ -78,5 +78,53 @@ namespace Movies.Api.Repositories
 
             return (movies, totalCount);
         }
+
+        public async Task<MoviesDto?> GetMovieWithActorsAsync(int id)
+        {
+            return await _dbContext.Movies
+                .AsNoTracking()
+                .Where(movie => movie.Id == id)
+                .Select(movie => new MoviesDto
+                {
+                    Id = movie.Id,
+                    Title = movie.Title,
+                    Description = movie.Description,
+                    ReleaseDate = movie.ReleaseDate,
+                    DurationMinutes = movie.DurationMinutes,
+                    Genre = movie.Genre,
+                    Rating = movie.Rating,
+                    CreatedAt = movie.CreatedAt,
+                    ModifiedAt = movie.ModifiedAt,
+                    MoviePoster = movie.MoviePoster == null
+                        ? null
+                        : new MoviePosterDto
+                        {
+                            Id = movie.MoviePoster.Id,
+                            MovieId = movie.MoviePoster.MovieId,
+                            ImageUrl = movie.MoviePoster.ImageUrl,
+                            AltText = movie.MoviePoster.AltText
+                        },
+                    MovieActors = movie.MovieActors
+                        .Select(movieActor => new MovieActorDto
+                        {
+                            MovieId = movieActor.MovieId,
+                            ActorId = movieActor.ActorId,
+                            CharacterName = movieActor.CharacterName,
+                            IsLeadRole = movieActor.IsLeadRole,
+                            Actor = new ActorDto
+                            {
+                                Id = movieActor.Actor.Id,
+                                FirstName = movieActor.Actor.FirstName,
+                                LastName = movieActor.Actor.LastName,
+                                Gender = movieActor.Actor.Gender,
+                                ProfileImageUrl = movieActor.Actor.ProfileImageUrl,
+                                CreatedAt = movieActor.Actor.CreatedAt,
+                                ModifiedAt = movieActor.Actor.ModifiedAt
+                            }
+                        })
+                        .ToList()
+                })
+                .FirstOrDefaultAsync();
+        }
     }
 }

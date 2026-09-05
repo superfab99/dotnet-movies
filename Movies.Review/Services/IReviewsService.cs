@@ -1,4 +1,4 @@
-using Movies.Api.DTOs;
+using Movies.Review.DTOs;
 
 namespace Movies.Api.Services
 {

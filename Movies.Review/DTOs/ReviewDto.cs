@@ -1,5 +1,5 @@
 
-namespace Movies.Api.DTOs
+namespace Movies.Review.DTOs
 {
     public class ReviewDto
     {

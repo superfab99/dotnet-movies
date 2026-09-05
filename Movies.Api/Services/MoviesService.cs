@@ -84,7 +84,7 @@ namespace Movies.Api.Services
 
         public async Task<MoviesDto?> GetMovieByIdAsync(int id)
         {
-            var movie = await _moviesRepository.GetByIdAsync(id);
+            var movie = await _moviesRepository.GetMovieWithActorsAsync(id);
 
             if (movie == null)
             {
@@ -92,7 +92,7 @@ namespace Movies.Api.Services
                 return null;
             }
 
-            return _mapper.Map<MoviesDto>(movie);
+            return movie;
         }
 
         public async Task<MoviesDto?> UpdateMovieAsync(int id, MovieUpdateDto movieUpdateDto)

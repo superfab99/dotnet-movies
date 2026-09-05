@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Movies.Api.Data;
 
@@ -11,9 +12,11 @@ using Movies.Api.Data;
 namespace Movies.Api.Migrations
 {
     [DbContext(typeof(MoviesApiDbContext))]
-    partial class MoviesApiDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260905140116_AddActorsAndMovieActors")]
+    partial class AddActorsAndMovieActors
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -166,6 +169,38 @@ namespace Movies.Api.Migrations
                     b.ToTable("MoviePoster");
                 });
 
+            modelBuilder.Entity("Movies.Api.Models.Review", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Comment")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("ModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("MovieId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MovieId");
+
+                    b.ToTable("Reviews");
+                });
+
             modelBuilder.Entity("Movies.Api.Models.MovieActor", b =>
                 {
                     b.HasOne("Movies.Api.Models.Actor", "Actor")
@@ -196,6 +231,17 @@ namespace Movies.Api.Migrations
                     b.Navigation("Movie");
                 });
 
+            modelBuilder.Entity("Movies.Api.Models.Review", b =>
+                {
+                    b.HasOne("Movies.Api.Models.Movie", "Movie")
+                        .WithMany("Reviews")
+                        .HasForeignKey("MovieId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Movie");
+                });
+
             modelBuilder.Entity("Movies.Api.Models.Actor", b =>
                 {
                     b.Navigation("MovieActors");
@@ -206,6 +252,8 @@ namespace Movies.Api.Migrations
                     b.Navigation("MovieActors");
 
                     b.Navigation("MoviePoster");
+
+                    b.Navigation("Reviews");
                 });
 #pragma warning restore 612, 618
         }

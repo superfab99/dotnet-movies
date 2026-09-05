@@ -81,11 +81,12 @@ try
 
     builder.Services.AddScoped<IMoviesRepository, MoviesRepository>();
     builder.Services.AddScoped<IMoviesService, MoviesService>();
-    builder.Services.AddScoped<IReviewsService, ReviewsService>();
-    builder.Services.AddScoped<IReviewsRepository, ReviewsRepository>();
     builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
     builder.Services.AddScoped<IMoviePosterRepository, MoviePosterRepository>();
     builder.Services.AddScoped<IMoviePosterService, MoviePosterService>();
+    builder.Services.AddScoped<IActorService, ActorService>();
+    builder.Services.AddScoped<IActorRepository, ActorRepository>();
+    builder.Services.AddScoped<IMovieActorService, MovieActorService>();
 
 
     //other mapping will be discovered if its in same folder

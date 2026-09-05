@@ -1,9 +1,10 @@
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Movies.Api.DTOs;
 using Movies.Api.Services;
+using Movies.Review.DTOs;
 
-namespace Movies.Api.Controllers
+namespace Movies.Review.Controllers
 {
     [ApiController]
     [Authorize]

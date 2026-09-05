@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Movies.Api.DTOs;
 using Movies.Api.Services;
 
-namespace Movies.Api.Controller
+namespace Movies.Api.Controllers
 {
     [ApiController]
     [Authorize]
@@ -12,12 +12,29 @@ namespace Movies.Api.Controller
     public class MoviesController : ControllerBase
     {
         private readonly IMoviesService _moviesService;
+        private readonly IMovieActorService _movieActorService;
         private readonly ILogger<MoviesController> _logger;
 
-        public MoviesController(IMoviesService moviesService, ILogger<MoviesController> logger)
+        public MoviesController(
+            IMoviesService moviesService,
+            IMovieActorService movieActorService,
+            ILogger<MoviesController> logger)
         {
             _moviesService = moviesService;
+            _movieActorService = movieActorService;
             _logger = logger;
+        }
+
+        [HttpPost("{movieId:int}/actors")]
+        public async Task<IActionResult> AssignActor(
+            int movieId,
+            [FromBody] MovieActorCreateDto createDto)
+        {
+            var movieActor = await _movieActorService.AssignActorAsync(
+                movieId,
+                createDto);
+
+            return Ok(movieActor);
         }
 
         [HttpPost()]

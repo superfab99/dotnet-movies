@@ -1,8 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Movies.Api.Models
+namespace Movies.Review.Models
 {
-    public class Review : BaseModel
+    public class MovieReview : BaseModel
     {
         [Required]
         [StringLength(2000)]
@@ -10,6 +10,5 @@ namespace Movies.Api.Models
         [Range(1, 5)]
         public int Rating { get; set; }
         public int MovieId { get; set; }
-        public Movie Movie { get; set; } = null!;
     }
 }

@@ -1,19 +1,19 @@
 using Microsoft.EntityFrameworkCore;
-using Movies.Api.Data;
-using Movies.Api.Models;
+using Movies.Review.Data;
+using Movies.Review.Models;
 
 namespace Movies.Api.Repositories
 {
-    public class ReviewsRepository : Repository<Review>, IReviewsRepository
+    public class ReviewsRepository : Repository<MovieReview>, IReviewsRepository
     {
         private readonly ILogger<ReviewsRepository> _logger;
 
-        public ReviewsRepository(MoviesApiDbContext dbContext, ILogger<ReviewsRepository> logger) : base(dbContext)
+        public ReviewsRepository(MoviesReviewDbContext dbContext, ILogger<ReviewsRepository> logger) : base(dbContext)
         {
             _logger = logger;
         }
 
-        public async Task<List<Review>> GetByMovieIdAsync(int movieId)
+        public async Task<List<MovieReview>> GetByMovieIdAsync(int movieId)
         {
             var reviews = await _dbSet
                 .AsNoTracking()
