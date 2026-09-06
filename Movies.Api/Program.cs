@@ -1,5 +1,7 @@
+using System.Configuration;
 using System.Security.Claims;
 using System.Threading.RateLimiting;
+using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -55,27 +57,46 @@ try
     });
 
     builder.Services.AddSwaggerGen(options =>
-{
-    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Name = "Authorization",
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT",
-        In = ParameterLocation.Header,
-        Description = "Enter your JWT token."
-    });
-    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
-    {
+        options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
         {
-        new OpenApiSecuritySchemeReference("Bearer", document),
-        new List<string>()
-        }
+            Name = "Authorization",
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            In = ParameterLocation.Header,
+            Description = "Enter your JWT token."
+        });
+        options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+        {
+            {
+            new OpenApiSecuritySchemeReference("Bearer", document),
+            new List<string>()
+            }
+        });
     });
-});
 
     builder.Services.AddDbContext<MoviesApiDbContext>(options =>
         options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+    builder.Services.AddMassTransit(x =>
+   {
+       x.UsingRabbitMq((context, configurator) =>
+       {
+           var rabbitHost = builder.Configuration["RabbitMQSettings:Host"]
+               ?? throw new InvalidOperationException("RabbitMQ host is not configured.");
+           var rabbitUsername = builder.Configuration["RabbitMQSettings:Username"]
+               ?? throw new InvalidOperationException("RabbitMQ username is not configured.");
+           var rabbitPassword = builder.Configuration["RabbitMQSettings:Password"]
+               ?? throw new InvalidOperationException("RabbitMQ password is not configured.");
+
+           configurator.Host(rabbitHost, host =>
+           {
+               host.Username(rabbitUsername);
+               host.Password(rabbitPassword);
+           });
+       });
+   });
 
     builder.Services.AddMoviesApiHealthChecks();
 

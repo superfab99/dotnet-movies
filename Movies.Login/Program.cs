@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using MassTransit;
 using Movies.Login.Data;
 using Movies.Login.DTOs;
 using Movies.Login.HealthChecks;
@@ -69,6 +70,25 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.AddDbContext<MoviesLoginDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddMassTransit(x =>
+{
+    x.UsingRabbitMq((context, configurator) =>
+    {
+        var rabbitHost = builder.Configuration["RabbitMQSettings:Host"]
+            ?? throw new InvalidOperationException("RabbitMQ host is not configured.");
+        var rabbitUsername = builder.Configuration["RabbitMQSettings:Username"]
+            ?? throw new InvalidOperationException("RabbitMQ username is not configured.");
+        var rabbitPassword = builder.Configuration["RabbitMQSettings:Password"]
+            ?? throw new InvalidOperationException("RabbitMQ password is not configured.");
+
+        configurator.Host(rabbitHost, host =>
+        {
+            host.Username(rabbitUsername);
+            host.Password(rabbitPassword);
+        });
+    });
+});
 
 builder.Services.AddMoviesLoginHealthChecks();
 
