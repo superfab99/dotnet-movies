@@ -1,31 +1,37 @@
 using AutoMapper;
-using Movies.Api.Repositories;
 using Movies.Review.DTOs;
 using Movies.Review.Models;
+using Movies.Review.Repositories;
 
-namespace Movies.Api.Services
+namespace Movies.Review.Services
 {
     public class ReviewsService : IReviewsService
     {
 
         private readonly IReviewsRepository _reviewRepository;
+        private readonly IMoviesRepository _moviesRepository;
         private readonly IMapper _mapper;
 
-        public ReviewsService(IReviewsRepository reviewRepository, IMapper mapper)
+        public ReviewsService(
+            IReviewsRepository reviewRepository,
+            IMoviesRepository moviesRepository,
+            IMapper mapper)
         {
             _reviewRepository = reviewRepository;
+            _moviesRepository = moviesRepository;
             _mapper = mapper;
         }
 
         public async Task<ReviewDto> CreateReviewAsync(ReviewCreateDto reviewDto)
         {
-            // var movie = await _movieRepository.GetByIdAsync(reviewDto.MovieId);
+            var movie = await _moviesRepository
+                .GetBySourceMovieIdAsync(reviewDto.MovieId);
 
-            // if (movie == null)
-            // {
-            //     _logger.LogWarning("Cannot create review - Movie with ID {MovieId} not found", reviewDto.MovieId);
-            //     throw new KeyNotFoundException("The movie was not found.");
-            // }
+            if (movie is null)
+            {
+                throw new KeyNotFoundException(
+                    $"Movie {reviewDto.MovieId} was not found.");
+            }
 
             var review = _mapper.Map<MovieReview>(reviewDto);
             _reviewRepository.Create(review);

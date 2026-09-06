@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Movies.Review.Data;
 using Movies.Review.Models;
 
-namespace Movies.Api.Repositories
+namespace Movies.Review.Repositories
 {
     public class Repository<T> : IRepository<T> where T : BaseModel
     {

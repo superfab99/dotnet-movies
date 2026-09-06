@@ -62,6 +62,12 @@ EF migrations and startup seeders are present in all three services. The local D
 - Review CRUD service, repository, controller, and DTO mapping are present.
 - Reviews use a separate database from `Movies.Api`.
 - Reviews store `MovieId` as an identifier owned by the API service; there is no cross-database EF foreign key.
+- `MovieCreated` is consumed from RabbitMQ through a dedicated `movies-review-movie-created` queue.
+- Consumed movies are stored as a local `Movie` projection in `MoviesReviewDb`.
+- Movie projection writes are idempotent at the application level using `SourceMovieId`.
+- Review creation validates that the movie exists in the local projection before saving.
+- Unknown movie IDs return `404` from the review create endpoint.
+- The `AddMovieProjection` migration creates the local `Movies` table.
 - Startup migration and review seeding are present.
 - JWT bearer authentication and Swagger bearer configuration are present.
 
@@ -87,11 +93,12 @@ EF migrations and startup seeders are present in all three services. The local D
 
 ### High Priority
 
-1. **RabbitMQ application integration**
-   - Add MassTransit and RabbitMQ package references.
-   - Define shared message contracts in a dedicated contracts project.
-   - Register buses, producers, consumers, and service-specific queues.
-   - Add retry, error queue, idempotency, correlation, and outbox handling.
+1. **RabbitMQ reliability and synchronization**
+   - Add MassTransit retry and error-queue handling for failed consumers.
+   - Add the MassTransit outbox to `Movies.Api` so database writes and published events remain reliable together.
+   - Add `MovieUpdated` and `MovieDeleted` consumers in `Movies.Review`.
+   - Add a unique database index on `Movie.SourceMovieId` as a second line of defense against duplicate projections.
+   - Decide how the review API represents the temporary period before a movie projection is replicated.
 
 2. **Automated tests**
    - Add unit tests for service validation and authorization.
@@ -125,7 +132,7 @@ EF migrations and startup seeders are present in all three services. The local D
 
 - One-to-one relationship modeling.
 - Cross-service ownership and eventual consistency.
-- RabbitMQ exchanges, queues, routing, acknowledgements, and dead-lettering.
+- RabbitMQ exchanges, queues, routing, acknowledgements, retries, and dead-lettering.
 - MassTransit consumers, retries, outbox, and idempotency.
 - Containerizing the three application services, not only their infrastructure.
 - Deployment pipelines and Kubernetes fundamentals.
@@ -152,4 +159,4 @@ dotnet ef database update --project Movies.Review --startup-project Movies.Revie
 
 ## Overall Assessment
 
-The project has a solid multi-service foundation: independent databases, EF migrations, startup seeding, authentication, CRUD workflows, and local SQL Server/RabbitMQ infrastructure are present. It is not yet an asynchronously communicating RabbitMQ/MassTransit system because the applications do not currently publish or consume messages. Automated tests, secrets management, and consistent cross-service operational concerns also remain before production deployment.
+The project has a solid multi-service foundation: independent databases, EF migrations, startup seeding, authentication, CRUD workflows, shared event contracts, MassTransit publishing, a RabbitMQ consumer, and a local movie projection are present. The current design is eventually consistent: a movie may be created in `Movies.Api` before it is available in `Movies.Review`. Consumer retries, outbox handling, update/delete synchronization, automated tests, secrets management, and consistent cross-service operational concerns remain before production deployment.

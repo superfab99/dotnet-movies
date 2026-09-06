@@ -11,6 +11,7 @@ namespace Movies.Review.Data
         }
 
         public DbSet<MovieReview> MovieReviews { get; set; }
+        public DbSet<Movie> Movies { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

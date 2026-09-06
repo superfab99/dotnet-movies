@@ -1,8 +1,8 @@
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Movies.Api.Services;
 using Movies.Review.DTOs;
+using Movies.Review.Services;
 
 namespace Movies.Review.Controllers
 {
@@ -23,7 +23,18 @@ namespace Movies.Review.Controllers
         [HttpPost()]
         public async Task<IActionResult> CreateReview([FromBody] ReviewCreateDto reviewCreateDto)
         {
-            var result = await _reviewsService.CreateReviewAsync(reviewCreateDto);
+            ReviewDto result;
+
+            try
+            {
+                result = await _reviewsService.CreateReviewAsync(reviewCreateDto);
+            }
+            catch (KeyNotFoundException exception)
+            {
+                _logger.LogWarning(exception.Message);
+                return NotFound(exception.Message);
+            }
+
             _logger.LogInformation("Review {ReviewId} created via POST endpoint for movie {MovieId}", result.Id, reviewCreateDto.MovieId);
             return CreatedAtAction(nameof(GetReviewById), new { id = result.Id }, result);
         }

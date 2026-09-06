@@ -6,9 +6,7 @@ namespace Movies.Api.Repositories;
 
 public class ActorRepository : Repository<Actor>, IActorRepository
 {
-    public ActorRepository(
-        MoviesApiDbContext dbContext)
-        : base(dbContext)
+    public ActorRepository(MoviesApiDbContext dbContext) : base(dbContext)
     {
     }
 

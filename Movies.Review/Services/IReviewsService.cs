@@ -1,6 +1,6 @@
 using Movies.Review.DTOs;
 
-namespace Movies.Api.Services
+namespace Movies.Review.Services
 {
     public interface IReviewsService
     {

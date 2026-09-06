@@ -5,10 +5,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using MassTransit;
-using Movies.Api.Repositories;
-using Movies.Api.Services;
 using Movies.Review.Data;
 using Movies.Review.Mappings;
+using Movies.Review.Consumers;
+using Movies.Review.Repositories;
+using Movies.Review.Services;
 
 try
 {
@@ -63,6 +64,8 @@ try
 
     builder.Services.AddMassTransit(x =>
     {
+        x.AddConsumer<MovieCreatedConsumer>();
+
         x.UsingRabbitMq((context, configurator) =>
         {
             var rabbitHost = builder.Configuration["RabbitMQSettings:Host"]
@@ -77,11 +80,19 @@ try
                 host.Username(rabbitUsername);
                 host.Password(rabbitPassword);
             });
+
+            configurator.ReceiveEndpoint(
+            "movies-review-movie-created",
+            endpoint =>
+            {
+                endpoint.ConfigureConsumer<MovieCreatedConsumer>(context);
+            });
         });
     });
 
     builder.Services.AddScoped<IReviewsService, ReviewsService>();
     builder.Services.AddScoped<IReviewsRepository, ReviewsRepository>();
+    builder.Services.AddScoped<IMoviesRepository, MoviesRepository>();
     builder.Services.AddAutoMapper(_ => { }, typeof(ReviewMapping).Assembly);
 
     var app = builder.Build();
