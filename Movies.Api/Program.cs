@@ -145,6 +145,8 @@ try
 
     app.MapControllers();
 
+    await DbSeeder.SeedAsync(app.Services);
+
     app.Run();
 
 }

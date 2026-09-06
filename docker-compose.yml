@@ -1,0 +1,29 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server
+    container_name: moviessqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: "Developer"
+      MSSQL_SA_PASSWORD: "Admin@123"
+    ports:
+      - "1433:1433"
+    volumes:
+      - /var/opt/mssql
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: moviesrabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: "movies"
+      RABBITMQ_DEFAULT_PASS: "Admin@123"
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - /var/lib/rabbitmq
+    hostname: rabbitmq
+
+volumes:
+  sqlserver-data:
+  rabbitmq-data:

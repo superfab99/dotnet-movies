@@ -10,12 +10,12 @@ namespace Movies.Api.Utils
             {
                 var connectionString = context.Configuration.GetConnectionString("DefaultConnection");
                 logConfig.WriteTo.Console();
-                logConfig.WriteTo.MSSqlServer(connectionString,
-                sinkOptions: new Serilog.Sinks.MSSqlServer.MSSqlServerSinkOptions
-                {
-                    TableName = "Logs",
-                    AutoCreateSqlTable = true
-                });
+                // logConfig.WriteTo.MSSqlServer(connectionString,
+                // sinkOptions: new Serilog.Sinks.MSSqlServer.MSSqlServerSinkOptions
+                // {
+                //     TableName = "Logs",
+                //     AutoCreateSqlTable = true
+                // });
             });
         }
     }

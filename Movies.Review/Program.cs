@@ -79,6 +79,8 @@ try
     app.UseAuthorization();
     app.MapControllers();
 
+    await DbSeeder.SeedAsync(app.Services);
+
     app.Run();
 
 }
