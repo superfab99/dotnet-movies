@@ -64,7 +64,10 @@ try
 
     builder.Services.AddMassTransit(x =>
     {
+        // automatic registration
         x.AddConsumer<MovieCreatedConsumer>();
+        x.AddConsumer<MovieDeletedConsumer>();
+        x.AddConsumer<MovieUpdatedConsumer>();
 
         x.UsingRabbitMq((context, configurator) =>
         {
@@ -81,11 +84,26 @@ try
                 host.Password(rabbitPassword);
             });
 
+            // only required if you want to provide explicit queue names
             configurator.ReceiveEndpoint(
             "movies-review-movie-created",
             endpoint =>
             {
                 endpoint.ConfigureConsumer<MovieCreatedConsumer>(context);
+            });
+
+            configurator.ReceiveEndpoint(
+            "movies-review-movie-deleted",
+            endpoint =>
+            {
+                endpoint.ConfigureConsumer<MovieDeletedConsumer>(context);
+            });
+
+            configurator.ReceiveEndpoint(
+            "movies-review-movie-updated",
+            endpoint =>
+            {
+                endpoint.ConfigureConsumer<MovieUpdatedConsumer>(context);
             });
         });
     });

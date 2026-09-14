@@ -1,6 +1,6 @@
 # Movies Services Verification Report
 
-**Date:** September 6, 2026  
+**Date:** September 14, 2026  
 **Scope:** `Movies.Api`, `Movies.Login`, `Movies.Review`, and local Docker infrastructure
 
 ## Current Status
@@ -63,6 +63,7 @@ EF migrations and startup seeders are present in all three services. The local D
 - Reviews use a separate database from `Movies.Api`.
 - Reviews store `MovieId` as an identifier owned by the API service; there is no cross-database EF foreign key.
 - `MovieCreated` is consumed from RabbitMQ through a dedicated `movies-review-movie-created` queue.
+- `MovieUpdated` and `MovieDeleted` are consumed through dedicated review queues.
 - Consumed movies are stored as a local `Movie` projection in `MoviesReviewDb`.
 - Movie projection writes are idempotent at the application level using `SourceMovieId`.
 - Review creation validates that the movie exists in the local projection before saving.
@@ -96,7 +97,6 @@ EF migrations and startup seeders are present in all three services. The local D
 1. **RabbitMQ reliability and synchronization**
    - Add MassTransit retry and error-queue handling for failed consumers.
    - Add the MassTransit outbox to `Movies.Api` so database writes and published events remain reliable together.
-   - Add `MovieUpdated` and `MovieDeleted` consumers in `Movies.Review`.
    - Add a unique database index on `Movie.SourceMovieId` as a second line of defense against duplicate projections.
    - Decide how the review API represents the temporary period before a movie projection is replicated.
 
