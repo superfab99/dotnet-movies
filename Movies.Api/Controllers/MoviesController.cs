@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Movies.Api.DTOs;
 using Movies.Api.Services;
-using Movies.Contracts.Movies;
 
 namespace Movies.Api.Controllers
 {
@@ -16,18 +15,15 @@ namespace Movies.Api.Controllers
         private readonly IMoviesService _moviesService;
         private readonly IMovieActorService _movieActorService;
         private readonly ILogger<MoviesController> _logger;
-        private readonly IPublishEndpoint _publishEndpoint;
 
         public MoviesController(
             IMoviesService moviesService,
             IMovieActorService movieActorService,
-            ILogger<MoviesController> logger,
-            IPublishEndpoint publishEndpoint)
+            ILogger<MoviesController> logger)
         {
             _moviesService = moviesService;
             _movieActorService = movieActorService;
             _logger = logger;
-            _publishEndpoint = publishEndpoint;
         }
 
         [HttpPost("{movieId:int}/actors")]
@@ -48,7 +44,6 @@ namespace Movies.Api.Controllers
             var movie = await _moviesService.CreateMovieAsync(movieCreateDto);
             _logger.LogInformation("Movie {MovieId} created via POST endpoint", movie.Id);
 
-            await _publishEndpoint.Publish(new MovieCreated(movie.Id, movie.Title, movie.Genre, movie.ReleaseDate, DateTime.UtcNow));
             return CreatedAtAction(nameof(GetMovieById), new { id = movie.Id }, movie);
         }
 
@@ -86,7 +81,6 @@ namespace Movies.Api.Controllers
                 return NotFound();
             }
 
-            await _publishEndpoint.Publish(new MovieUpdated(updatedMovie.Id, updatedMovie.Title, updatedMovie.Genre, updatedMovie.ReleaseDate, DateTime.UtcNow));
             _logger.LogInformation("Movie {MovieId} updated via PUT endpoint", id);
             return Ok(updatedMovie);
         }
@@ -102,7 +96,6 @@ namespace Movies.Api.Controllers
             }
             _logger.LogInformation("Movie {MovieId} deleted via DELETE endpoint", id);
 
-            await _publishEndpoint.Publish(new MovieDeleted(id, DateTimeOffset.UtcNow));
             return NoContent();
         }
 

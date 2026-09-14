@@ -1,3 +1,4 @@
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Movies.Api.Models;
 
@@ -20,6 +21,11 @@ namespace Movies.Api.Data
 
             modelBuilder.ApplyConfigurationsFromAssembly(
                 typeof(MoviesApiDbContext).Assembly);
+
+            //changes for outbox pattern for mass transit specifically used but it.
+            modelBuilder.AddInboxStateEntity();
+            modelBuilder.AddOutboxMessageEntity();
+            modelBuilder.AddOutboxStateEntity();
         }
     }
 }

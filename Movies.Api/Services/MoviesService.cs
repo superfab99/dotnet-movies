@@ -1,8 +1,10 @@
 using AutoMapper;
+using MassTransit;
 using Microsoft.Extensions.Caching.Memory;
 using Movies.Api.DTOs;
 using Movies.Api.Models;
 using Movies.Api.Repositories;
+using Movies.Contracts.Movies;
 
 namespace Movies.Api.Services
 {
@@ -15,15 +17,18 @@ namespace Movies.Api.Services
         private readonly ILogger<MoviesService> _logger;
         private readonly IMemoryCache _cache;
         private const string MoviesCacheVersionKey = "movies:version";
+        private readonly IPublishEndpoint _publishEndpoint;
 
         public MoviesService(IMoviesRepository moviesRepository,
         IMapper mapper, ILogger<MoviesService> logger,
-        IMemoryCache cache)
+        IMemoryCache cache,
+        IPublishEndpoint publishEndpoint)
         {
             _moviesRepository = moviesRepository;
             _mapper = mapper;
             _logger = logger;
             _cache = cache;
+            _publishEndpoint = publishEndpoint;
         }
 
         public async Task<MoviesDto> CreateMovieAsync(MovieCreateDto movieCreateDto)
@@ -37,6 +42,10 @@ namespace Movies.Api.Services
                 _logger.LogError("Failed to create movie with title '{Title}'", movieCreateDto.Title);
                 throw new InvalidOperationException("The movie could not be created.");
             }
+
+            await _publishEndpoint.Publish(new MovieCreated(movie.Id, movie.Title, movie.Genre, movie.ReleaseDate, DateTime.UtcNow));
+            var savedPublish = await _moviesRepository.SaveChangesAsync();
+
             var currentVersion = _cache.Get<int>(MoviesCacheVersionKey);
             _cache.Set(MoviesCacheVersionKey, currentVersion + 1, TimeSpan.FromHours(24));
             _logger.LogInformation("Movie created successfully with ID {MovieId}, Title '{Title}'", movie.Id, movie.Title);
@@ -112,6 +121,8 @@ namespace Movies.Api.Services
             movie.Rating = movieUpdateDto.Rating;
             movie.ReleaseDate = movieUpdateDto.ReleaseDate;
 
+            await _publishEndpoint.Publish(new MovieUpdated(movie.Id, movie.Title, movie.Genre, movie.ReleaseDate, DateTime.UtcNow));
+
             await _moviesRepository.SaveChangesAsync();
             var currentVersion = _cache.Get<int>(MoviesCacheVersionKey);
             _cache.Set(MoviesCacheVersionKey, currentVersion + 1, TimeSpan.FromHours(24));
@@ -133,6 +144,7 @@ namespace Movies.Api.Services
             if (!deleted)
                 return false;
 
+            await _publishEndpoint.Publish(new MovieDeleted(id, DateTimeOffset.UtcNow));
             var saved = await _moviesRepository.SaveChangesAsync();
 
             if (!saved)

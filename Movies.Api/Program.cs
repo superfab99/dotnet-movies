@@ -81,6 +81,12 @@ try
 
     builder.Services.AddMassTransit(x =>
    {
+       //changes required fot outbox pattern for mass transit
+       x.AddEntityFrameworkOutbox<MoviesApiDbContext>(o =>
+       {
+           o.UseSqlServer();
+           o.UseBusOutbox();
+       });
        x.UsingRabbitMq((context, configurator) =>
        {
            var rabbitHost = builder.Configuration["RabbitMQSettings:Host"]

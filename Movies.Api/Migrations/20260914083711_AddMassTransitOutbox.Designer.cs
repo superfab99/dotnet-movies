@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Movies.Api.Data;
 
@@ -11,9 +12,11 @@ using Movies.Api.Data;
 namespace Movies.Api.Migrations
 {
     [DbContext(typeof(MoviesApiDbContext))]
-    partial class MoviesApiDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260914083711_AddMassTransitOutbox")]
+    partial class AddMassTransitOutbox
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -147,10 +150,6 @@ namespace Movies.Api.Migrations
 
                     b.HasKey("SequenceNumber");
 
-                    b.HasIndex("EnqueueTime");
-
-                    b.HasIndex("ExpirationTime");
-
                     b.HasIndex("OutboxId", "SequenceNumber")
                         .IsUnique()
                         .HasFilter("[OutboxId] IS NOT NULL");
@@ -167,6 +166,10 @@ namespace Movies.Api.Migrations
                     b.Property<Guid>("OutboxId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("BusName")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
 
                     b.Property<DateTime>("Created")
                         .HasColumnType("datetime2");
@@ -187,7 +190,7 @@ namespace Movies.Api.Migrations
 
                     b.HasKey("OutboxId");
 
-                    b.HasIndex("Created");
+                    b.HasIndex("BusName", "Created");
 
                     b.ToTable("OutboxState");
                 });
