@@ -12,7 +12,7 @@ services:
       - sqlserver-data:/var/opt/mssql
 
   rabbitmq:
-    image: rabbitmq:4-management
+    image: masstransit/rabbitmq:latest
     container_name: moviesrabbitmq
     environment:
       RABBITMQ_DEFAULT_USER: "movies"

@@ -69,6 +69,23 @@ try
         x.AddConsumer<MovieDeletedConsumer>();
         x.AddConsumer<MovieUpdatedConsumer>();
 
+        // Applies retry then redelivery to manually declared receive endpoints.
+        void ApplyResilience(IRabbitMqReceiveEndpointConfigurator endpoint)
+        {
+            // Longer outages use RabbitMQ's delayed-message-exchange plugin.
+            endpoint.UseDelayedRedelivery(r => r.Intervals(
+                TimeSpan.FromMinutes(1),
+                TimeSpan.FromMinutes(5),
+                TimeSpan.FromMinutes(15)));
+
+            // Short transient failures use quick in-memory retries first.
+            endpoint.UseMessageRetry(r => r.Exponential(
+                5,
+                TimeSpan.FromMilliseconds(200),
+                TimeSpan.FromSeconds(5),
+                TimeSpan.FromMilliseconds(200)));
+        }
+
         x.UsingRabbitMq((context, configurator) =>
         {
             var rabbitHost = builder.Configuration["RabbitMQSettings:Host"]
@@ -89,6 +106,7 @@ try
             "movies-review-movie-created",
             endpoint =>
             {
+                ApplyResilience(endpoint);
                 endpoint.ConfigureConsumer<MovieCreatedConsumer>(context);
             });
 
@@ -96,6 +114,7 @@ try
             "movies-review-movie-deleted",
             endpoint =>
             {
+                ApplyResilience(endpoint);
                 endpoint.ConfigureConsumer<MovieDeletedConsumer>(context);
             });
 
@@ -103,6 +122,7 @@ try
             "movies-review-movie-updated",
             endpoint =>
             {
+                ApplyResilience(endpoint);
                 endpoint.ConfigureConsumer<MovieUpdatedConsumer>(context);
             });
         });

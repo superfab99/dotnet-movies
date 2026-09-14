@@ -44,6 +44,8 @@ EF migrations and startup seeders are present in all three services. The local D
 - Health check endpoints are present.
 - JWT bearer authentication and Swagger bearer configuration are present.
 - Rate limiting is present.
+- MassTransit transactional outbox (EF Core bus outbox) is implemented on `MoviesApiDbContext`: `InboxState`, `OutboxMessage`, and `OutboxState` tables are added via `OnModelCreating`, and `AddEntityFrameworkOutbox` + `UseBusOutbox()` are configured in `Program.cs`.
+- `MoviesService` publishes `MovieCreated`, `MovieUpdated`, and `MovieDeleted` from within the same unit of work as the database save (not from the controller), so publish failures/broker outages no longer risk losing events; verified via crash-recovery testing (killing the process and stopping RabbitMQ mid-flow, then confirming the pending `OutboxMessage` row still delivered on recovery).
 
 ### Movies.Login
 
@@ -71,6 +73,8 @@ EF migrations and startup seeders are present in all three services. The local D
 - The `AddMovieProjection` migration creates the local `Movies` table.
 - Startup migration and review seeding are present.
 - JWT bearer authentication and Swagger bearer configuration are present.
+- MassTransit message retry (`UseMessageRetry`, exponential backoff) and delayed redelivery (`UseDelayedRedelivery`, RabbitMQ delayed-message-exchange plugin) are configured on all three consumer receive endpoints, applied directly per manually declared `ReceiveEndpoint` (the `AddConfigureEndpointsCallback` global hook does not fire for manual endpoints, only for `ConfigureEndpoints`).
+- Verified end-to-end: transient DB failures trigger in-process retries, then broker-held delayed redelivery (confirmed via the `_delay` `x-delayed-message` exchange in the RabbitMQ management UI), then successful consumption once the database is reachable again; exhausting all attempts routes the message to the `_error` queue.
 
 ### Docker Infrastructure
 
@@ -80,6 +84,7 @@ EF migrations and startup seeders are present in all three services. The local D
 - RabbitMQ Management UI is exposed on `15672`.
 - SQL Server and RabbitMQ data paths are declared as container volumes.
 - SQL Server may run through Docker's `linux/amd64` emulation on an Apple Silicon Mac; the current Compose file reports this as a platform warning.
+- The `rabbitmq` service image was changed to `masstransit/rabbitmq:latest`, which ships with the `rabbitmq_delayed_message_exchange` plugin pre-enabled, required for `Movies.Review`'s delayed redelivery.
 
 ## Important Corrections To Earlier Claims
 
@@ -95,10 +100,11 @@ EF migrations and startup seeders are present in all three services. The local D
 ### High Priority
 
 1. **RabbitMQ reliability and synchronization**
-   - Add MassTransit retry and error-queue handling for failed consumers.
-   - Add the MassTransit outbox to `Movies.Api` so database writes and published events remain reliable together.
+   - ~~Add MassTransit retry and error-queue handling for failed consumers.~~ Done: exponential retry + delayed redelivery + error queue configured and verified in `Movies.Review`.
+   - ~~Add the MassTransit outbox to `Movies.Api` so database writes and published events remain reliable together.~~ Done: EF Core bus outbox implemented and crash-recovery tested.
    - Add a unique database index on `Movie.SourceMovieId` as a second line of defense against duplicate projections.
    - Decide how the review API represents the temporary period before a movie projection is replicated.
+   - `MassTransit.RabbitMQ` is currently pinned at `8.3.5`; upgrading to v9.x would unlock `UseQueueBasedDelayedRedelivery` (no RabbitMQ plugin dependency) but needs compatibility testing across all three services.
 
 2. **Automated tests**
    - Add unit tests for service validation and authorization.
@@ -132,8 +138,9 @@ EF migrations and startup seeders are present in all three services. The local D
 
 - One-to-one relationship modeling.
 - Cross-service ownership and eventual consistency.
-- RabbitMQ exchanges, queues, routing, acknowledgements, retries, and dead-lettering.
-- MassTransit consumers, retries, outbox, and idempotency.
+- ~~RabbitMQ exchanges, queues, routing, acknowledgements, retries, and dead-lettering.~~ Covered: retry, delayed redelivery, and error queues implemented in `Movies.Review`.
+- ~~MassTransit consumers, retries, outbox, and idempotency.~~ Covered: outbox in `Movies.Api`, retry/redelivery in `Movies.Review`; consumers already used `SourceMovieId` idempotency checks.
+- Automated integration tests for outbox delivery and consumer retry/redelivery behavior (e.g. Testcontainers or MassTransit's in-memory test harness), replacing today's manual testing.
 - Containerizing the three application services, not only their infrastructure.
 - Deployment pipelines and Kubernetes fundamentals.
 
@@ -159,4 +166,4 @@ dotnet ef database update --project Movies.Review --startup-project Movies.Revie
 
 ## Overall Assessment
 
-The project has a solid multi-service foundation: independent databases, EF migrations, startup seeding, authentication, CRUD workflows, shared event contracts, MassTransit publishing, a RabbitMQ consumer, and a local movie projection are present. The current design is eventually consistent: a movie may be created in `Movies.Api` before it is available in `Movies.Review`. Consumer retries, outbox handling, update/delete synchronization, automated tests, secrets management, and consistent cross-service operational concerns remain before production deployment.
+The project has a solid multi-service foundation: independent databases, EF migrations, startup seeding, authentication, CRUD workflows, shared event contracts, MassTransit publishing, a RabbitMQ consumer, and a local movie projection are present. The current design is eventually consistent: a movie may be created in `Movies.Api` before it is available in `Movies.Review`. The dual-write problem between the database and RabbitMQ is now closed via the MassTransit transactional outbox in `Movies.Api`, and `Movies.Review`'s consumers now have exponential retry, delayed redelivery, and error-queue handling for transient and longer-duration failures — both verified through manual failure-injection testing (broken connections, database renames, and process kills). Automated integration tests, secrets management, and consistent cross-service operational concerns remain before production deployment.
