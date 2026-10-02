@@ -13,6 +13,7 @@ using Movies.Login.Mappings;
 using Movies.Login.Models;
 using Movies.Login.Repositories;
 using Movies.Login.Services;
+using Azure.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,6 +29,46 @@ builder.Services.AddAuthorization(options =>
         policy.RequireClaim("permission", "movie.write");
     });
 });
+
+var keyVaultUri = builder.Configuration["KeyVault:Uri"];
+if (string.IsNullOrWhiteSpace(keyVaultUri))
+{
+    throw new InvalidOperationException("Key Vault URI is not configured.");
+}
+
+var tenantId = builder.Configuration["KeyVault:TenantId"]
+    ?? builder.Configuration["AZURE_TENANT_ID"];
+var clientId = builder.Configuration["KeyVault:ClientId"]
+    ?? builder.Configuration["AZURE_CLIENT_ID"];
+var clientSecret = builder.Configuration["KeyVault:ClientSecret"]
+    ?? builder.Configuration["AZURE_CLIENT_SECRET"];
+
+if (string.IsNullOrWhiteSpace(tenantId) ||
+    string.IsNullOrWhiteSpace(clientId) ||
+    string.IsNullOrWhiteSpace(clientSecret))
+{
+    throw new InvalidOperationException(
+        "KeyVault:TenantId, KeyVault:ClientId, and KeyVault:ClientSecret must be configured.");
+}
+
+var keyVaultCredential = new ClientSecretCredential(tenantId, clientId, clientSecret);
+try
+{
+    builder.Configuration.AddAzureKeyVault(new Uri(keyVaultUri), keyVaultCredential);
+    Console.WriteLine($"✓ Key Vault loaded successfully from: {keyVaultUri}");
+    Console.WriteLine($"✓ JWT:Key = {builder.Configuration["Jwt:Key"]}");
+    Console.WriteLine($"✓ RMQ:UserName = {builder.Configuration["RabbitMQSettings:Username"]}");
+    Console.WriteLine($"✓ RMQ:Password = {builder.Configuration["RabbitMQSettings:Password"]}");
+}
+catch (Azure.RequestFailedException ex) when (ex.Status == 403)
+{
+    var appId = clientId;
+    var errorMsg = $"Access denied to Key Vault '{keyVaultUri}'. The service principal '{appId}' does not have the required permissions. " +
+                   "Please grant 'Key Vault Secrets User' or 'Key Vault Secrets Officer' role to this principal on the Key Vault.";
+
+    throw new InvalidOperationException(errorMsg, ex);
+}
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
