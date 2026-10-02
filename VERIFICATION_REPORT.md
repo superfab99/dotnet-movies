@@ -1,6 +1,7 @@
 # Movies Services Verification Report
 
-**Date:** September 14, 2026  
+**Initial Report Date:** September 14, 2026  
+**Last Verification:** September 28, 2026  
 **Scope:** `Movies.Api`, `Movies.Login`, `Movies.Review`, and local Docker infrastructure
 
 ## Current Status
@@ -16,6 +17,30 @@ The repository contains three separate .NET 10 services with independent EF Core
 EF migrations and startup seeders are present in all three services. The local Docker Compose file starts SQL Server and RabbitMQ together.
 
 ## Verified Implemented Features
+
+### Build and Runtime Status (September 28, 2026)
+
+**Build Status:**
+
+- ✅ `Movies.Api` - Build succeeded (0 warnings, 0 errors)
+- ✅ `Movies.Login` - Build succeeded (0 warnings, 0 errors)
+- ✅ `Movies.Review` - Build succeeded (0 warnings, 0 errors)
+- ✅ `Movies.Contracts` - All dependencies resolved
+
+**Service Status:**
+
+- ✅ `movies-api` - Running on `0.0.0.0:5057->8081/tcp`
+- ✅ `movies-login` - Running on `0.0.0.0:5056->8080/tcp`
+- ✅ `movies-review` - Running on `0.0.0.0:5058->8082/tcp`
+- ✅ `moviesrabbitmq` - Running (MassTransit/RabbitMQ with delayed-message-exchange plugin)
+- ✅ `moviessqlserver` - Running and healthy on port 1433
+
+**Endpoint Verification:**
+
+- ✅ Movies.Api health check: `GET /health/ready` returns "Healthy"
+- ✅ Movies.Login health check: `GET /health/ready` returns "Healthy"
+- ✅ Movies.Api Swagger: `GET /swagger/index.html` accessible
+- ✅ Movies.Login Swagger: `GET /swagger/index.html` accessible
 
 ### Persistence and Database Setup
 
@@ -97,14 +122,30 @@ EF migrations and startup seeders are present in all three services. The local D
 
 ## Pending Work
 
+### Newly Verified (September 28, 2026)
+
+The following items were previously marked as completed and have been reverified:
+
+1. ✅ **All three services build successfully** - Movies.Api, Movies.Login, Movies.Review compile without errors or warnings.
+2. ✅ **All services run in Docker** - Docker Compose brings up all five containers (SQL Server, RabbitMQ, and three application services) successfully.
+3. ✅ **Health check endpoints** - Movies.Api and Movies.Login expose `/health/live` and `/health/ready` endpoints returning "Healthy".
+4. ✅ **Swagger UI documentation** - Both Movies.Api and Movies.Login have Swagger UI accessible at `/swagger/index.html` with JWT Bearer authentication configured.
+5. ✅ **JWT Bearer authentication** - All three services validate JWT tokens correctly.
+6. ✅ **Database migrations** - EF Core migrations exist for all three databases (MoviesApiDb, MoviesLoginDb, MoviesReviewDb) and apply on startup.
+7. ✅ **Seed data insertion** - All three services insert seed data on first run when tables are empty.
+8. ✅ **MassTransit outbox** - Movies.Api implements transactional outbox pattern verified in Program.cs with `AddEntityFrameworkOutbox` and `UseBusOutbox`.
+9. ✅ **MassTransit retry and redelivery** - Movies.Review configures exponential retry (5 attempts) and delayed redelivery (1, 5, 15 minute intervals) on receive endpoints.
+10. ✅ **Rate limiting** - Movies.Api and Movies.Login implement rate limiting with 429 status responses.
+11. ✅ **Exception handling** - Global exception handlers and request logging middleware present in service configurations.
+
 ### High Priority
 
 1. **RabbitMQ reliability and synchronization**
-   - ~~Add MassTransit retry and error-queue handling for failed consumers.~~ Done: exponential retry + delayed redelivery + error queue configured and verified in `Movies.Review`.
-   - ~~Add the MassTransit outbox to `Movies.Api` so database writes and published events remain reliable together.~~ Done: EF Core bus outbox implemented and crash-recovery tested.
-   - Add a unique database index on `Movie.SourceMovieId` as a second line of defense against duplicate projections.
-   - Decide how the review API represents the temporary period before a movie projection is replicated.
-   - `MassTransit.RabbitMQ` is currently pinned at `8.3.5`; upgrading to v9.x would unlock `UseQueueBasedDelayedRedelivery` (no RabbitMQ plugin dependency) but needs compatibility testing across all three services.
+   - ✅ Add MassTransit retry and error-queue handling for failed consumers. **COMPLETED**
+   - ✅ Add the MassTransit outbox to `Movies.Api` so database writes and published events remain reliable together. **COMPLETED**
+   - ❌ **Add a unique database index on `Movie.SourceMovieId`** - Second line of defense against duplicate projections in Movies.Review database. Missing from current migration.
+   - ❌ **Decide how the review API represents the temporary period before a movie projection is replicated** - Currently, unknown movie IDs return 404, but the transient state needs documentation.
+   - ❌ `MassTransit.RabbitMQ` is currently pinned at `8.3.5`; upgrading to v9.x would unlock `UseQueueBasedDelayedRedelivery` (no RabbitMQ plugin dependency) but needs compatibility testing across all three services.
 
 2. **Automated tests**
    - Add unit tests for service validation and authorization.
@@ -123,7 +164,7 @@ EF migrations and startup seeders are present in all three services. The local D
 
 ### Medium Priority
 
-- Add health checks to `Movies.Review`.
+- ❌ **Add health checks to `Movies.Review`** - Health check infrastructure exists in Movies.Api and Movies.Login but is missing from Movies.Review service (verified September 28).
 - Add consistent exception handling and request logging to `Movies.Review`.
 - Add consistent rate limiting and security headers across all services.
 - Add service-to-service authentication and authorization.
