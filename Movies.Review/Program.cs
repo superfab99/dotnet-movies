@@ -10,6 +10,7 @@ using Movies.Review.Mappings;
 using Movies.Review.Consumers;
 using Movies.Review.Repositories;
 using Movies.Review.Services;
+using Azure.Identity;
 
 try
 {
@@ -19,6 +20,27 @@ try
     builder.Services.AddOpenApi();
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddAuthorization();
+
+    var keyVaultUri = builder.Configuration["KeyVault:Uri"];
+    if (string.IsNullOrWhiteSpace(keyVaultUri))
+    {
+        throw new InvalidOperationException("Key Vault URI is not configured.");
+    }
+
+    try
+    {
+        var credential = new AzureCliCredential();
+        builder.Configuration.AddAzureKeyVault(new Uri(keyVaultUri), credential);
+        Console.WriteLine($"✓ Key Vault loaded successfully from: {keyVaultUri}");
+        Console.WriteLine($"✓ JWT:Key = {builder.Configuration["Jwt:Key"]}");
+        Console.WriteLine($"✓ ConnectionString = {builder.Configuration["ConnectionStrings:MoviesReviewDbConnection"]}");
+        Console.WriteLine($"✓ RMQ:UserName = {builder.Configuration["RabbitMQSettings:Username"]}");
+        Console.WriteLine($"✓ RMQ:Password = {builder.Configuration["RabbitMQSettings:Password"]}");
+    }
+    catch (Exception ex)
+    {
+        throw new InvalidOperationException(ex.Message);
+    }
 
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -60,7 +82,7 @@ try
     });
 
     builder.Services.AddDbContext<MoviesReviewDbContext>(options =>
-            options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+            options.UseSqlServer(builder.Configuration.GetConnectionString("MoviesReviewDbConnection")));
 
     builder.Services.AddMassTransit(x =>
     {

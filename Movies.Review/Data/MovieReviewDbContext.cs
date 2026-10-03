@@ -17,6 +17,10 @@ namespace Movies.Review.Data
         {
             base.OnModelCreating(modelBuilder);
 
+            modelBuilder.Entity<Movie>()
+            .HasIndex(movie => movie.SourceMovieId)
+            .IsUnique();
+
             modelBuilder.ApplyConfigurationsFromAssembly(
                 typeof(MoviesReviewDbContext).Assembly);
         }
