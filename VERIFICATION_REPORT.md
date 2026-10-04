@@ -93,6 +93,8 @@ EF migrations and startup seeders are present in all three services. The local D
 - `MovieUpdated` and `MovieDeleted` are consumed through dedicated review queues.
 - Consumed movies are stored as a local `Movie` projection in `MoviesReviewDb`.
 - Movie projection writes are idempotent at the application level using `SourceMovieId`.
+- `Movie.SourceMovieId` has a unique EF Core index, with the `AddUniqueSourceMovieIdIndex` migration adding `IX_Movies_SourceMovieId` to prevent duplicate projections at the database level.
+- The migration is present in the repository; application to each target database must be confirmed by running the `MoviesReviewDbContext` database update or by verifying that startup migration has applied it.
 - Review creation validates that the movie exists in the local projection before saving.
 - Unknown movie IDs return `404` from the review create endpoint.
 - The `AddMovieProjection` migration creates the local `Movies` table.
@@ -143,7 +145,7 @@ The following items were previously marked as completed and have been reverified
 1. **RabbitMQ reliability and synchronization**
    - ✅ Add MassTransit retry and error-queue handling for failed consumers. **COMPLETED**
    - ✅ Add the MassTransit outbox to `Movies.Api` so database writes and published events remain reliable together. **COMPLETED**
-   - ❌ **Add a unique database index on `Movie.SourceMovieId`** - Second line of defense against duplicate projections in Movies.Review database. Missing from current migration.
+   - ✅ **Add a unique database index on `Movie.SourceMovieId`** - Model configuration and the `AddUniqueSourceMovieIdIndex` migration add `IX_Movies_SourceMovieId` as a second line of defense against duplicate projections. Confirm the migration has been applied in each target environment.
    - ❌ **Decide how the review API represents the temporary period before a movie projection is replicated** - Currently, unknown movie IDs return 404, but the transient state needs documentation.
    - ❌ `MassTransit.RabbitMQ` is currently pinned at `8.3.5`; upgrading to v9.x would unlock `UseQueueBasedDelayedRedelivery` (no RabbitMQ plugin dependency) but needs compatibility testing across all three services.
 
@@ -153,8 +155,8 @@ The following items were previously marked as completed and have been reverified
    - Add end-to-end tests for cross-service workflows.
 
 3. **Configuration and secrets**
-   - Move SQL and JWT secrets out of committed appsettings files.
-   - Use environment variables, .NET user secrets, or a secret store.
+   - ✅ Move SQL and JWT secrets out of committed appsettings files and manage them with Azure Key Vault. **COMPLETED**
+   - ✅ Use Azure Key Vault as the secret store. **COMPLETED**
    - Add explicit Development, Staging, and Production configuration.
 
 4. **Build and runtime verification**
@@ -207,4 +209,4 @@ dotnet ef database update --project Movies.Review --startup-project Movies.Revie
 
 ## Overall Assessment
 
-The project has a solid multi-service foundation: independent databases, EF migrations, startup seeding, authentication, CRUD workflows, shared event contracts, MassTransit publishing, a RabbitMQ consumer, and a local movie projection are present. The current design is eventually consistent: a movie may be created in `Movies.Api` before it is available in `Movies.Review`. The dual-write problem between the database and RabbitMQ is now closed via the MassTransit transactional outbox in `Movies.Api`, and `Movies.Review`'s consumers now have exponential retry, delayed redelivery, and error-queue handling for transient and longer-duration failures — both verified through manual failure-injection testing (broken connections, database renames, and process kills). Automated integration tests, secrets management, and consistent cross-service operational concerns remain before production deployment.
+The project has a solid multi-service foundation: independent databases, EF migrations, startup seeding, authentication, CRUD workflows, shared event contracts, MassTransit publishing, a RabbitMQ consumer, and a local movie projection are present. The current design is eventually consistent: a movie may be created in `Movies.Api` before it is available in `Movies.Review`. The dual-write problem between the database and RabbitMQ is now closed via the MassTransit transactional outbox in `Movies.Api`, and `Movies.Review`'s consumers now have exponential retry, delayed redelivery, and error-queue handling for transient and longer-duration failures — both verified through manual failure-injection testing (broken connections, database renames, and process kills). SQL and JWT secrets are managed with Azure Key Vault; automated integration tests and consistent cross-service operational concerns remain before production deployment.
