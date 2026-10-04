@@ -2,6 +2,7 @@ using System.Configuration;
 using System.Security.Claims;
 using System.Threading.RateLimiting;
 using Azure.Identity;
+using Azure.Messaging.ServiceBus;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -56,6 +57,11 @@ try
         throw new InvalidOperationException(ex.Message);
     }
 
+    //configuring service bus
+    var serviceBusConnection = builder.Configuration["AzureServiceBus:ConnectionString"];
+    builder.Services.AddSingleton(new ServiceBusClient(serviceBusConnection));
+
+
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -108,6 +114,7 @@ try
     builder.Services.AddScoped<IActorService, ActorService>();
     builder.Services.AddScoped<IActorRepository, ActorRepository>();
     builder.Services.AddScoped<IMovieActorService, MovieActorService>();
+    builder.Services.AddScoped<IServiceBusPublisher, ServiceBusPublisher>();
 
 
     //other mapping will be discovered if its in same folder

@@ -9,6 +9,7 @@ using Movies.Review.Mappings;
 using Movies.Review.Repositories;
 using Movies.Review.Services;
 using Azure.Identity;
+using Azure.Messaging.ServiceBus;
 
 try
 {
@@ -37,6 +38,9 @@ try
     {
         throw new InvalidOperationException(ex.Message);
     }
+
+    var serviceBusConnectionString = builder.Configuration["AzureServiceBus:ConnectionString"];
+    builder.Services.AddSingleton(new ServiceBusClient(serviceBusConnectionString));
 
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -84,6 +88,7 @@ try
     builder.Services.AddScoped<IReviewsRepository, ReviewsRepository>();
     builder.Services.AddScoped<IMoviesRepository, MoviesRepository>();
     builder.Services.AddAutoMapper(_ => { }, typeof(ReviewMapping).Assembly);
+    builder.Services.AddHostedService<ServiceBusConsumer>();
 
     var app = builder.Build();
 

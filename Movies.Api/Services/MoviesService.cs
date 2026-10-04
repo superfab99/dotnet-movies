@@ -13,17 +13,20 @@ namespace Movies.Api.Services
         private readonly IMoviesRepository _moviesRepository;
         private readonly IMapper _mapper;
         private readonly ILogger<MoviesService> _logger;
+        private readonly IServiceBusPublisher _serviceBusPublisher;
         private readonly IMemoryCache _cache;
         private const string MoviesCacheVersionKey = "movies:version";
 
         public MoviesService(IMoviesRepository moviesRepository,
         IMapper mapper, ILogger<MoviesService> logger,
-        IMemoryCache cache)
+        IMemoryCache cache,
+        IServiceBusPublisher serviceBusPublisher)
         {
             _moviesRepository = moviesRepository;
             _mapper = mapper;
             _logger = logger;
             _cache = cache;
+            _serviceBusPublisher = serviceBusPublisher;
         }
 
         public async Task<MoviesDto> CreateMovieAsync(MovieCreateDto movieCreateDto)
@@ -40,6 +43,9 @@ namespace Movies.Api.Services
 
             var currentVersion = _cache.Get<int>(MoviesCacheVersionKey);
             _cache.Set(MoviesCacheVersionKey, currentVersion + 1, TimeSpan.FromHours(24));
+
+            await _serviceBusPublisher.PublishMovieCreatedAsync(movie.Id, movie.Title, movie.Genre, movie.ReleaseDate);
+
             _logger.LogInformation("Movie created successfully with ID {MovieId}, Title '{Title}'", movie.Id, movie.Title);
             return _mapper.Map<MoviesDto>(movie);
         }
@@ -117,6 +123,8 @@ namespace Movies.Api.Services
             var currentVersion = _cache.Get<int>(MoviesCacheVersionKey);
             _cache.Set(MoviesCacheVersionKey, currentVersion + 1, TimeSpan.FromHours(24));
 
+            await _serviceBusPublisher.PublishMovieUpdatedAsync(movie.Id, movie.Title, movie.Genre, movie.ReleaseDate);
+
             _logger.LogInformation("Movie with ID {MovieId} updated successfully", id);
             return _mapper.Map<MoviesDto>(movie);
         }
@@ -144,6 +152,8 @@ namespace Movies.Api.Services
 
             var currentVersion = _cache.Get<int>(MoviesCacheVersionKey);
             _cache.Set(MoviesCacheVersionKey, currentVersion + 1, TimeSpan.FromHours(24));
+
+            await _serviceBusPublisher.PublishMovieDeletedAsync(movie.Id);
 
             _logger.LogInformation("Movie with ID {MovieId} deleted successfully", id);
             return true;
