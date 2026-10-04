@@ -4,10 +4,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
-using MassTransit;
 using Movies.Review.Data;
 using Movies.Review.Mappings;
-using Movies.Review.Consumers;
 using Movies.Review.Repositories;
 using Movies.Review.Services;
 using Azure.Identity;
@@ -34,8 +32,6 @@ try
         Console.WriteLine($"✓ Key Vault loaded successfully from: {keyVaultUri}");
         Console.WriteLine($"✓ JWT:Key = {builder.Configuration["Jwt:Key"]}");
         Console.WriteLine($"✓ ConnectionString = {builder.Configuration["ConnectionStrings:MoviesReviewDbConnection"]}");
-        Console.WriteLine($"✓ RMQ:UserName = {builder.Configuration["RabbitMQSettings:Username"]}");
-        Console.WriteLine($"✓ RMQ:Password = {builder.Configuration["RabbitMQSettings:Password"]}");
     }
     catch (Exception ex)
     {
@@ -83,72 +79,6 @@ try
 
     builder.Services.AddDbContext<MoviesReviewDbContext>(options =>
             options.UseSqlServer(builder.Configuration.GetConnectionString("MoviesReviewDbConnection")));
-
-    builder.Services.AddMassTransit(x =>
-    {
-        // automatic registration
-        x.AddConsumer<MovieCreatedConsumer>();
-        x.AddConsumer<MovieDeletedConsumer>();
-        x.AddConsumer<MovieUpdatedConsumer>();
-
-        // Applies retry then redelivery to manually declared receive endpoints.
-        void ApplyResilience(IRabbitMqReceiveEndpointConfigurator endpoint)
-        {
-            // Longer outages use RabbitMQ's delayed-message-exchange plugin.
-            endpoint.UseDelayedRedelivery(r => r.Intervals(
-                TimeSpan.FromMinutes(1),
-                TimeSpan.FromMinutes(5),
-                TimeSpan.FromMinutes(15)));
-
-            // Short transient failures use quick in-memory retries first.
-            endpoint.UseMessageRetry(r => r.Exponential(
-                5,
-                TimeSpan.FromMilliseconds(200),
-                TimeSpan.FromSeconds(5),
-                TimeSpan.FromMilliseconds(200)));
-        }
-
-        x.UsingRabbitMq((context, configurator) =>
-        {
-            var rabbitHost = builder.Configuration["RabbitMQSettings:Host"]
-                ?? throw new InvalidOperationException("RabbitMQ host is not configured.");
-            var rabbitUsername = builder.Configuration["RabbitMQSettings:Username"]
-                ?? throw new InvalidOperationException("RabbitMQ username is not configured.");
-            var rabbitPassword = builder.Configuration["RabbitMQSettings:Password"]
-                ?? throw new InvalidOperationException("RabbitMQ password is not configured.");
-
-            configurator.Host(rabbitHost, host =>
-            {
-                host.Username(rabbitUsername);
-                host.Password(rabbitPassword);
-            });
-
-            // only required if you want to provide explicit queue names
-            configurator.ReceiveEndpoint(
-            "movies-review-movie-created",
-            endpoint =>
-            {
-                ApplyResilience(endpoint);
-                endpoint.ConfigureConsumer<MovieCreatedConsumer>(context);
-            });
-
-            configurator.ReceiveEndpoint(
-            "movies-review-movie-deleted",
-            endpoint =>
-            {
-                ApplyResilience(endpoint);
-                endpoint.ConfigureConsumer<MovieDeletedConsumer>(context);
-            });
-
-            configurator.ReceiveEndpoint(
-            "movies-review-movie-updated",
-            endpoint =>
-            {
-                ApplyResilience(endpoint);
-                endpoint.ConfigureConsumer<MovieUpdatedConsumer>(context);
-            });
-        });
-    });
 
     builder.Services.AddScoped<IReviewsService, ReviewsService>();
     builder.Services.AddScoped<IReviewsRepository, ReviewsRepository>();

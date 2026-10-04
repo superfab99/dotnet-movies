@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
-using MassTransit;
 using Movies.Login.Data;
 using Movies.Login.DTOs;
 using Movies.Login.HealthChecks;
@@ -43,8 +42,6 @@ try
     Console.WriteLine($"✓ Key Vault loaded successfully from: {keyVaultUri}");
     Console.WriteLine($"✓ JWT:Key = {builder.Configuration["Jwt:Key"]}");
     Console.WriteLine($"✓ ConnectionString = {builder.Configuration["ConnectionStrings:MovieLoginDbConnection"]}");
-    Console.WriteLine($"✓ RMQ:UserName = {builder.Configuration["RabbitMQSettings:Username"]}");
-    Console.WriteLine($"✓ RMQ:Password = {builder.Configuration["RabbitMQSettings:Password"]}");
 }
 catch (Exception ex)
 {
@@ -93,25 +90,6 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.AddDbContext<MoviesLoginDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("MovieLoginDbConnection")));
-
-builder.Services.AddMassTransit(x =>
-{
-    x.UsingRabbitMq((context, configurator) =>
-    {
-        var rabbitHost = builder.Configuration["RabbitMQSettings:Host"]
-            ?? throw new InvalidOperationException("RabbitMQ host is not configured.");
-        var rabbitUsername = builder.Configuration["RabbitMQSettings:Username"]
-            ?? throw new InvalidOperationException("RabbitMQ username is not configured.");
-        var rabbitPassword = builder.Configuration["RabbitMQSettings:Password"]
-            ?? throw new InvalidOperationException("RabbitMQ password is not configured.");
-
-        configurator.Host(rabbitHost, host =>
-        {
-            host.Username(rabbitUsername);
-            host.Password(rabbitPassword);
-        });
-    });
-});
 
 builder.Services.AddMoviesLoginHealthChecks();
 

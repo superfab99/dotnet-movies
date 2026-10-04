@@ -2,7 +2,6 @@ using System.Configuration;
 using System.Security.Claims;
 using System.Threading.RateLimiting;
 using Azure.Identity;
-using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -51,8 +50,6 @@ try
         Console.WriteLine($"✓ Key Vault loaded successfully from: {keyVaultUri}");
         Console.WriteLine($"✓ JWT:Key = {builder.Configuration["Jwt:Key"]}");
         Console.WriteLine($"✓ ConnectionString = {builder.Configuration["ConnectionStrings:MoviesApiDbConnection"]}");
-        Console.WriteLine($"✓ RMQ:UserName = {builder.Configuration["RabbitMQSettings:Username"]}");
-        Console.WriteLine($"✓ RMQ:Password = {builder.Configuration["RabbitMQSettings:Password"]}");
     }
     catch (Exception ex)
     {
@@ -100,31 +97,6 @@ try
 
     builder.Services.AddDbContext<MoviesApiDbContext>(options =>
         options.UseSqlServer(builder.Configuration.GetConnectionString("MoviesApiDbConnection")));
-
-    builder.Services.AddMassTransit(x =>
-   {
-       //changes required fot outbox pattern for mass transit
-       x.AddEntityFrameworkOutbox<MoviesApiDbContext>(o =>
-       {
-           o.UseSqlServer();
-           o.UseBusOutbox();
-       });
-       x.UsingRabbitMq((context, configurator) =>
-       {
-           var rabbitHost = builder.Configuration["RabbitMQSettings:Host"]
-               ?? throw new InvalidOperationException("RabbitMQ host is not configured.");
-           var rabbitUsername = builder.Configuration["RabbitMQSettings:Username"]
-               ?? throw new InvalidOperationException("RabbitMQ username is not configured.");
-           var rabbitPassword = builder.Configuration["RabbitMQSettings:Password"]
-               ?? throw new InvalidOperationException("RabbitMQ password is not configured.");
-
-           configurator.Host(rabbitHost, host =>
-           {
-               host.Username(rabbitUsername);
-               host.Password(rabbitPassword);
-           });
-       });
-   });
 
     builder.Services.AddMoviesApiHealthChecks();
 

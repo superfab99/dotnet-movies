@@ -30,19 +30,6 @@ services:
       retries: 10
       start_period: 60s
 
-  rabbitmq:
-    image: masstransit/rabbitmq:latest
-    container_name: moviesrabbitmq
-    environment:
-      RABBITMQ_DEFAULT_USER: "movies"
-      RABBITMQ_DEFAULT_PASS: "Admin@123"
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    volumes:
-      - rabbitmq-data:/var/lib/rabbitmq
-    hostname: rabbitmq
-
   login:
     build:
       context: .
@@ -50,14 +37,9 @@ services:
     depends_on:
       sqlserver:
         condition: service_healthy
-      rabbitmq:
-        condition: service_started
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=MoviesLoginDb;User Id=sa;******;TrustServerCertificate=True;Connect Timeout=5"
-      RabbitMQSettings__Host: "rabbitmq"
-      RabbitMQSettings__Username: "movies"
-      RabbitMQSettings__Password: "Admin@123"
       Jwt__Issuer: "Movies.Login"
       Jwt__Audience: "Movies.Client"
       Jwt__Key: "MoviesLoginJwtSecretKeyMustBeAtLeast32Chars"
@@ -71,14 +53,9 @@ services:
     depends_on:
       sqlserver:
         condition: service_healthy
-      rabbitmq:
-        condition: service_started
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=MoviesApiDb;User Id=sa;******;TrustServerCertificate=True;Connect Timeout=5"
-      RabbitMQSettings__Host: "rabbitmq"
-      RabbitMQSettings__Username: "movies"
-      RabbitMQSettings__Password: "Admin@123"
       Jwt__Issuer: "Movies.Login"
       Jwt__Audience: "Movies.Client"
       Jwt__Key: "MoviesLoginJwtSecretKeyMustBeAtLeast32Chars"
@@ -92,14 +69,9 @@ services:
     depends_on:
       sqlserver:
         condition: service_healthy
-      rabbitmq:
-        condition: service_started
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=MoviesReviewDb;User Id=sa;******;TrustServerCertificate=True;Connect Timeout=5"
-      RabbitMQSettings__Host: "rabbitmq"
-      RabbitMQSettings__Username: "movies"
-      RabbitMQSettings__Password: "Admin@123"
       Jwt__Issuer: "Movies.Login"
       Jwt__Audience: "Movies.Client"
       Jwt__Key: "MoviesLoginJwtSecretKeyMustBeAtLeast32Chars"
@@ -108,4 +80,3 @@ services:
 
 volumes:
   sqlserver-data:
-  rabbitmq-data:
